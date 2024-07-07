@@ -141,6 +141,12 @@ class SpreadOLS():
     def return_betas(self):
         return self._betas
 
+class SpreadCopula:
+    pass
+
+class SpreadVineCopula:
+    pass
+
 
 def spread_backtest(all_data: pd.DataFrame, symbol_list: list[str], SpreadEstimator: Union[Type[KalmanPairSpread], Type[KalmanTripletSpread], Type[SpreadOLS]], **kwargs) -> (float, pd.DataFrame):
 
@@ -187,6 +193,11 @@ def spread_backtest(all_data: pd.DataFrame, symbol_list: list[str], SpreadEstima
         se = SpreadEstimator(data, window)
     else:
         se = SpreadEstimator(data)
+    
+    if "transaction_cost"  in kwargs.keys():
+        transaction_cost = kwargs["transaction_cost"]
+    else:
+        transaction_cost = 0
 
     data['spread'] = se.estimate_spread()
     data = data[data.notna().any(axis=1).cummax()]
@@ -203,7 +214,7 @@ def spread_backtest(all_data: pd.DataFrame, symbol_list: list[str], SpreadEstima
     data['short_entry'] = data['spread_zscore'] > entry_threshold
     data['short_exit'] = data['spread_zscore'] < exit_threshold
     
-    # Signal positions
+    # Signal positions   1 long; -1 short; 0; no position 
     data['positions_long'] = np.nan
     data.loc[data['long_entry'], 'positions_long'] = 1
     data.loc[data['long_exit'], 'positions_long'] = 0
@@ -215,9 +226,14 @@ def spread_backtest(all_data: pd.DataFrame, symbol_list: list[str], SpreadEstima
     data['positions_short'] = data['positions_short'].ffill().fillna(0)
     data['positions'] = data['positions_long'] + data['positions_short']
 
+    
+
     data['return_spread'] = data[symbol_list].pct_change().iloc[:, -1] - data[symbol_list].pct_change().iloc[:, :-1].sum(axis=1)
 
-    data['strategy_returns'] = data['positions'].shift(1) * data['return_spread']
+    data["port"] = data['positions'].shift(1)
+    data["tc"] = data["port"].diff().abs().fillna(0) * transaction_cost * 1e-4
+
+    data['strategy_returns'] = data["port"] * data['return_spread'] - data["tc"]
     data['cumulative_returns'] = (1 + data['strategy_returns']).cumprod() - 1
     if data['strategy_returns'].std() != 0: 
         sr = data['strategy_returns'].mean() / data['strategy_returns'].std() * np.sqrt(365 * 6)
