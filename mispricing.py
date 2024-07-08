@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 import itertools
 from filterpy.kalman import KalmanFilter
 from binance.client import Client as bnb_client
-from datetime import datetime
 from typing import Union, Type
+from datetime import datetime, timedelta
 
 
 class KalmanPairSpread(KalmanFilter):
@@ -71,10 +71,13 @@ class KalmanTripletSpread(KalmanFilter):
         self._alphas = []
         self._betas1 = []
         self._betas2 = []
+        self._spreads = []
         self._fit()
 
+    def estimate_spread(self):
+        return np.array(self._spreads)
+
     def _fit(self):
-        spread = []
         for i in range(len(self.price2)):
             self.predict()
 
@@ -84,12 +87,12 @@ class KalmanTripletSpread(KalmanFilter):
             self._betas1.append(self.x[1])
             self._betas2.append(self.x[2])
             
-            spread.append(self.price3[i] - (self.x[0] + self.x[1] * self.price1[i] + self.x[2] * self.price2[i] ))
+            self._spreads.append(self.price3[i] - (self.x[0] + self.x[1] * self.price1[i] + self.x[2] * self.price2[i]))
             
             if i < len(self.price2) - 1:
                 self.H = np.array([[1., self.price1[i + 1], self.price2[i + 1]]])
 
-        return spread
+        return None
     def return_alphas(self):
         return self._alphas
 
@@ -115,7 +118,10 @@ class SpreadOLS():
         self._betas = np.full((self.n, self.m), np.nan)
         self._spreads = np.full((self.n, 1), np.nan)
 
-        self._fit()
+        try:
+            self._fit()
+        except np.linalg.LinAlgError:
+            pass
 
     def estimate_spread(self):
         return self._spreads
@@ -235,8 +241,9 @@ def spread_backtest(all_data: pd.DataFrame, symbol_list: list[str], SpreadEstima
 
     data['strategy_returns'] = data["port"] * data['return_spread'] - data["tc"]
     data['cumulative_returns'] = (1 + data['strategy_returns']).cumprod() - 1
+    delta_time = timedelta(days=365) / (data.index[-1] - data.index[-2])
     if data['strategy_returns'].std() != 0: 
-        sr = data['strategy_returns'].mean() / data['strategy_returns'].std() * np.sqrt(365 * 6)
+        sr = data['strategy_returns'].mean() / data['strategy_returns'].std() * np.sqrt(delta_time)
     else:
         sr = np.nan
     return sr, data
