@@ -21,3 +21,9 @@ sr, data = spread_backtest(df, ["NEOUSDT","QTUMUSDT"], KalmanPairSpread, transac
 ```
 `sr` is the Sharpe Ratio and `data` includes all time-series details of spreads, signals and returns.  
 
+
+Requirements:
+- numpy
+- pandas
+- filterpy
+

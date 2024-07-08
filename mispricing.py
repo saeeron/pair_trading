@@ -1,7 +1,5 @@
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import itertools
 from filterpy.kalman import KalmanFilter
 from binance.client import Client as bnb_client
 from typing import Union, Type
