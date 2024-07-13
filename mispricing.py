@@ -287,3 +287,77 @@ def return_all_cryptos(freq: str, start_ts: str, end_ts: str):
     px = px.reindex(pd.date_range(px.index[0],px.index[-1],freq=freq))
 
     return px
+
+def return_ohlc(symbol: str, freq: str, start_ts: str, end_ts: str):
+    """
+    returns ohlc prices from binance for a symbol
+
+    Parameters
+    ----------
+    symbol: str
+        symbol. e.g., BTCUSDT
+    freq : str
+        frequency for bar data
+    start_ts : str
+        starting date string
+    
+    end_ts: str
+        endinf date string
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame of crypto prices with columns = ['open', 'high','low','close']
+
+    Raises
+    ------
+    None
+    """
+    client = bnb_client(tld='US')
+    data = client.get_historical_klines(symbol, freq, start_ts, end_ts)
+    columns = ['open_time','open','high','low','close','volume','close_time','quote_volume',
+                    'num_trades','taker_base_volume','taker_quote_volume','ignore']
+    data = pd.DataFrame(data, columns = columns)
+    data['open_time'] = data['open_time'].map(lambda x: datetime.utcfromtimestamp(x/1000))
+    data['close_time'] = data['close_time'].map(lambda x: datetime.utcfromtimestamp(x/1000))
+    data = data.set_index('open_time')
+    px = data[['open','high', 'low', 'close']].astype(float)
+    px = px.reindex(pd.date_range(px.index[0],px.index[-1],freq=freq))
+
+    return px
+
+
+def calculate_atr(df, period=14):
+    """
+    Calculate the Average True Range (ATR) of a given DataFrame.
+
+    :param df: pandas DataFrame with 'High', 'Low', and 'Close' price columns
+    :param period: The period over which to calculate the ATR
+    :return: pandas Series with the ATR values
+    """
+    high_low = df['high'] - df['low']
+    high_close = np.abs(df['high'] - df['close'].shift())
+    low_close = np.abs(df['high'] - df['close'].shift())
+
+    true_range = pd.concat([high_low, high_close, low_close], axis=1).max(axis=1)
+    atr = true_range.rolling(window=period, min_periods=1).mean()
+
+    return atr
+
+
+def calculate_rsi(df, period=14):
+    """
+    Calculate the Relative Strength Index (RSI) of a given DataFrame.
+
+    :param df: pandas DataFrame with 'Close' price column
+    :param period: The period over which to calculate the RSI
+    :return: pandas Series with the RSI values
+    """
+    delta = df['close'].diff()
+    gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
+    loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
+    
+    rs = gain / loss
+    rsi = 100 - (100 / (1 + rs))
+    
+    return rsi / 100
