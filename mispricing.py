@@ -218,7 +218,7 @@ def spread_backtest(all_data: pd.DataFrame, symbol_list: list[str], SpreadEstima
     data['short_entry'] = data['spread_zscore'] > entry_threshold
     data['short_exit'] = data['spread_zscore'] < exit_threshold
     
-    # Signal positions   1 long; -1 short; 0; no position 
+    # Signal positions   1 long; -1 short; 0 no position 
     data['positions_long'] = np.nan
     data.loc[data['long_entry'], 'positions_long'] = 1
     data.loc[data['long_exit'], 'positions_long'] = 0

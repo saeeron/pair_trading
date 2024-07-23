@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from typing import Union, Type
 from datetime import datetime, timedelta
 
 
@@ -37,3 +38,34 @@ def calculate_rsi(df: pd.DataFrame, period=120):
     rsi = 100 - (100 / (1 + rs))
     
     return rsi / 100
+
+
+def momentum_neutral_backtest(ohlc1: pd.DataFrame, ohlc2: pd.DataFrame, **kwargs) -> (float, pd.DataFrame):
+    """
+    Backtest for momentum neutral strategy
+    """
+    rsi_period = kwargs.get("rsi_period", 120)
+    z_score_threshold = kwargs.get("z_score_threshold", 1.5)
+
+    rsi1 = calculate_rsi(ohlc1, period=120)
+    rsi2 = calculate_rsi(ohlc2, period=120)
+    
+    z_score = ((rsi1 - rsi2) - (rsi1 - rsi2).expanding().mean() )/ (rsi1 - rsi2).expanding().std()
+
+    rsi = pd.concat([rsi1, rsi2], axis = 1, join="outer")
+    rsi.columns = ['rsi1', 'rsi2']
+    rsi["diff"] = rsi1 - rsi2
+    rsi["z_score"] = z_score
+
+    def apply_fun(x):
+        
+        if x > z_score_threshold:
+            return -1
+        elif x < - z_score_threshold:
+            return 1
+        else:
+            return 0
+
+    rsi['position'] = rsi['z_score'].apply(apply_fun)
+    
+    return rsi
