@@ -57,26 +57,16 @@ def momentum_neutral_backtest(ohlc1: pd.DataFrame, ohlc2: pd.DataFrame, **kwargs
     rsi["diff"] = rsi1 - rsi2
     rsi["z_score"] = rsi['diff'].subtract(rsi['diff'].expanding().mean()) / rsi['diff'].expanding().std()
 
-    def apply_fun(x):
-        
-        if (x['rsi1'] > rsi_level_u and x['z_score'] > z_score_threshold) or ( x['rsi2'] < rsi_level_l and x['z_score'] > z_score_threshold ):
-            return -1
-        elif (x['rsi2'] > rsi_level_u and  x['z_score'] < - z_score_threshold) or ( x['rsi1'] < rsi_level_u and x['z_score'] < - z_score_threshold ):
-            return 1
-        else:
-            return 0
+    mom_flag = pd.Series(np.where((rsi["z_score"] > z_score_threshold) & (rsi['rsi1'] > rsi_level_u), -1, 
+                        (np.where((rsi["z_score"] < -z_score_threshold) & (rsi['rsi2'] < rsi_level_l),  1, 0))), index = rsi.index) # -1: ohlc1 is good for reversal, ohlc2 is good for momentum; vice versa for 1; 0: they are not diverging in their momentums
 
-    rsi['momentum_diff'] = rsi.apply(apply_fun, axis=1)
-    
-    rsi['ret1'] = ohlc1['close'].pct_change()
-    rsi['ret2'] = ohlc2['close'].pct_change()
+    mom1, mom2 = momentum_strategy(ohlc1), momentum_strategy(ohlc2)
+    rev1, rev2 = reversal_strategy(ohlc1), reversal_strategy(ohlc2)
 
-
-    rsi['ret_diff'] = ohlc1['close'].pct_change() - ohlc2['close'].pct_change()
-    rsi['port_ret'] = rsi['position'].shift(1) * rsi['ret_diff']
-
-    
-    return rsi
+    signal1 = pd.Series(np.where(mom_flag == -1, rev1, np.where(mom_flag == 1, mom1, 0)), index = rsi.index)
+    signal2 = pd.Series(np.where(mom_flag == 1, rev2, np.where(mom_flag == -1, mom2, 0)), index = rsi.index)
+   
+    return signal1.shift() * ohlc1['close'].pct_change() + signal2.shift() * ohlc2['close'].pct_change()
 
 def momentum_strategy(ohlc: pd.DataFrame):
 
