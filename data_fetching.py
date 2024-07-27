@@ -21,7 +21,7 @@ def return_all_cryptos(freq: str, start_ts: str, end_ts: str):
     Returns
     -------
     pd.DataFrame
-        DataFrame of crypto prices
+        DataFrame of crypto prices; only close price with index: open time
 
     Raises
     ------
@@ -45,6 +45,50 @@ def return_all_cryptos(freq: str, start_ts: str, end_ts: str):
     px = px.reindex(pd.date_range(px.index[0],px.index[-1],freq=freq))
 
     return px
+
+def return_all_cryptos_ohlc(freq: str, start_ts: str, end_ts: str):
+    """
+    returns all available cryptos prices from binance
+
+    Parameters
+    ----------
+    freq : str
+        frequency for bar data
+    start_ts : str
+        starting date string
+    
+    end_ts: str
+        endinf date string
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame of crypto prices; all ohlc with index: open time
+
+    Raises
+    ------
+    None
+        
+    """
+    client = bnb_client(tld='US')
+    all_symbols = client.get_all_tickers()
+    univ = [sym['symbol'] for sym in all_symbols if sym['symbol'].endswith("USDT") ]
+    px = []
+    for x in univ:
+        print('downloading ' + x + ' ...')
+        data = client.get_historical_klines(x, freq, start_ts, end_ts)
+        columns = ['open_time','open','high','low','close','volume','close_time','quote_volume',
+                    'num_trades','taker_base_volume','taker_quote_volume','ignore']
+    
+        data = pd.DataFrame(data, columns = columns)
+        data['open_time'] = data['open_time'].map(lambda x: datetime.utcfromtimestamp(x/1000))
+        data['close_time'] = data['close_time'].map(lambda x: datetime.utcfromtimestamp(x/1000))
+        px.append(data.set_index('open_time')[['open','high','low','close']])
+
+    px_all = pd.concat(px, axis = 1, join='outer', keys = univ).astype(float)
+    px_all = px_all.reindex(pd.date_range(px_all.index[0],px_all.index[-1],freq=freq))
+
+    return px_all
 
 def return_ohlc(symbol: str, freq: str, start_ts: str, end_ts: str):
     """

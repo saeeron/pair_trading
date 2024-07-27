@@ -145,11 +145,6 @@ class SpreadOLS():
     def return_betas(self):
         return self._betas
 
-class SpreadCopula:
-    pass
-
-class SpreadVineCopula:
-    pass
 
 
 def spread_backtest(all_data: pd.DataFrame, symbol_list: list[str], SpreadEstimator: Union[Type[KalmanPairSpread], Type[KalmanTripletSpread], Type[SpreadOLS]], **kwargs) -> (float, pd.DataFrame):
