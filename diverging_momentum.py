@@ -95,21 +95,25 @@ def momentum_neutral_backtest(ohlc1: pd.DataFrame, ohlc2: pd.DataFrame, **kwargs
     mom_port2 = mom2 * ohlc2['close'].pct_change()
     mom_port2 -= mom_port2.diff().abs().fillna(0) * tc_cost  * 1e-4
 
+    mom_pair = mom_port1 + mom_port2
+
     rev_port1 = rev1 * ohlc1['close'].pct_change()
     rev_port1 -= rev_port1.diff().abs().fillna(0) * tc_cost  * 1e-4
 
     rev_port2 = rev2 * ohlc2['close'].pct_change()
     rev_port2 -= rev_port2.diff().abs().fillna(0) * tc_cost  * 1e-4
 
-    return mom_div_port, mom_port1, mom_port2, rev_port1, rev_port2
+    rev_pair = rev_port1 + rev_port2
+
+    return mom_div_port, mom_pair ,mom_port1, mom_port2, rev_pair, rev_port1, rev_port2
 
 def momentum_strategy(ohlc: pd.DataFrame, **kwargs):
 
     shift = kwargs.get("shift", 1)
 
     ret = ohlc['close'].pct_change()
-    signal = np.sqrt(10)*(ret.rolling(10, min_periods=1).mean() - ret.rolling(365, min_periods=10).mean())
-    signal = (signal / ret.rolling(365, min_periods=10).std()).apply(np.sign)
+    signal = np.sqrt(10)*(ret.rolling(10, min_periods=1).mean() - ret.rolling(120, min_periods=10).mean())
+    signal = (signal / ret.rolling(120, min_periods=10).std()).apply(np.sign)
 
     return signal.shift(shift)
 
@@ -117,20 +121,11 @@ def reversal_strategy(ohlc: pd.DataFrame, **kwargs):
 
     level = kwargs.get("level", 0.05)
     shift = kwargs.get("shift", 1)
-    accum_window = kwargs.get("accum_window", 1)
+    accum_window = kwargs.get("accum_window", 5)
 
     ret = ohlc['close'].pct_change()
-    signal = ret.rolling(window=accum_window).sum()
-
-    def apply_fun(x):
-        
-        if x > level:
-            return -1
-        elif x < - level:
-            return 1
-        else:
-            return 0
-
-    signal = ret.rolling(window=5).sum().apply(apply_fun)
+    mov_sum = ret.rolling(window=accum_window).sum()
+    
+    signal = pd.Series(np.where(mov_sum > level, -1, np.where(mov_sum < -1 * level, 1, 0)), index = ohlc.index)
 
     return signal.shift(shift)
