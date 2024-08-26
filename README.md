@@ -61,7 +61,7 @@ from diverging_momentum import momentum_neutral_backtest
 
 ohlc1 = return_ohlc('ETCUSDT', '4h','2021-01-1','2022-01-01')
 
-ohlc2 = return_ohlc('ETCUSDT', '4h','2021-01-1','2022-01-01')
+ohlc2 = return_ohlc('KNCUSDT', '4h','2021-01-1','2022-01-01')
 
 ```
 
