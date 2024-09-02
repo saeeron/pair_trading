@@ -95,3 +95,7 @@ Requirements:
 - pandas
 
 - filterpy
+
+- tensorflow
+
+- scikit-learn

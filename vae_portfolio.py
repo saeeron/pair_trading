@@ -5,6 +5,7 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
 from sklearn.exceptions import NotFittedError
 import tensorflow as tf
+import pandas as pd
 
 
 class Sampling(layers.Layer):
@@ -68,10 +69,10 @@ class VAEGenerator:
         decoder = tf.keras.Model(latent_inputs, outputs, name="decoder")
         return decoder    
 
-    def load_data(self, X):
+    def load_data(self, X: pd.DataFrame):
 
         self.X = X
-        X_train, X_test = train_test_split(X, test_size=0.2, random_state=142)
+        X_train, X_test = train_test_split(X, test_size=0.3, random_state=142)
         self.X_train = X_train
         self.X_test = X_test
         self._X_train_scaled = self._scaler.fit_transform(self.X_train)
@@ -99,6 +100,7 @@ class VAEGenerator:
         if self._vae_fitted:
             z_sample = np.random.normal(size=(n, self._latent_dim))
             x_decoded = self._decoder.predict(z_sample)
-            return self._scaler.inverse_transform(x_decoded)
+            arr  = self._scaler.inverse_transform(x_decoded)
+            return pd.DataFrame(arr, columns = self.X.columns)
         else:
             raise NotFittedError("MODEL NOT FITTED YET!")
