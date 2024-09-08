@@ -79,11 +79,51 @@ print(f'Sharpe Ratio: {mom_div_port.mean() / mom_div_port.std() * 365 ** 0.5}' )
 
 ```
 
+### Using Covariance Estimator and Optimization to construct an optimum portfolio
+
+
+Using Varational AutoEncoder to Generate Return Data
+
+```python
+
+from vae_estimator import VAEGenerator
+
+# for example, using mom_div_port return from above
+
+vae = VAEGenerator()
+vae.load_data(mom_div_port)
+
+vae1.fit(epochs = 100)
+
+# generating 100,000 data points after training the model
+gen_ret = vae1.generate(100000)
+
+```
+Portfolio optimizatoin using Max Sharpe as a Mean-Variance variant 
+when using `gen_ret` to estmate mean and covariance
+
+```python
+from port_opt import MVO
+
+
+mvo = MVO("MaxSharpe", expected_returns = gen_ret.mean().values, cov_matrix = gen_ret.cov().values, risk_free_rate = 0)
+w_optim = mvo_sample.optim(bounds = (-1, 1), sum_constraint_abs = True)
+
+```
+Calculating portfolio cumulative return
+
+```python
+
+port_return = ((mom_div_port * w_sample).sum(axis = 1) + 1).cumprod()
+
+```
+
+
 ---
 for further info read articles:
 1. https://medium.com/@saeedroshanbox/is-momentum-neutral-trading-possible-1ffa5b2400cd
 2. https://medium.com/@saeedroshanbox/pair-and-triplet-spread-trading-on-cryptos-using-kalman-filter-65cdacbee5a2
-
+3. https://medium.com/@saeedroshanbox/optimizing-portfolio-of-pair-trading-strategies-using-variational-autoencoder-nns-9f4be1da06c1
 ---
 
   
@@ -91,6 +131,8 @@ for further info read articles:
 Requirements:
 
 - numpy
+
+- scipy
 
 - pandas
 

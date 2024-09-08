@@ -72,7 +72,7 @@ class VAEGenerator:
     def load_data(self, X: pd.DataFrame):
 
         self.X = X
-        X_train, X_test = train_test_split(X, test_size=0.3, random_state=142)
+        X_train, X_test = train_test_split(X, test_size=0.3, random_state=42)
         self.X_train = X_train
         self.X_test = X_test
         self._X_train_scaled = self._scaler.fit_transform(self.X_train)
