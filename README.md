@@ -1,4 +1,4 @@
-## A Python Module to Study Mispricing (market-neutral) and Momentum Divergence (momentum-neutral) Strategies for pairs (triplets, ...) and \nUsing generative AI for portfolio optimization
+## A Python Module to Study Mispricing (market-neutral) and Momentum Divergence (momentum-neutral) Strategies for pairs (triplets, ...) and Using generative AI for portfolio optimization
 
   This module implements some pair (triplets) trading ideas regarding mispricing and momentum divergence.  
 
