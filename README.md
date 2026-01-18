@@ -130,6 +130,8 @@ for further info read articles:
 
 Requirements:
 
+- python-binance
+  
 - numpy
 
 - scipy
